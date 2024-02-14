@@ -1,12 +1,12 @@
 <!-- templates/index.html -->
 <!DOCTYPE html>
 <html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>YouTube Summary App</title>
-  <style>
-    body {
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>YouTube Summary App</title>
+    <style>
+      body {
         font-family: Arial, sans-serif;
         background-color: #f4f4f4;
         margin: 0;
@@ -14,88 +14,160 @@
         align-items: center;
         height: 100vh;
       }
-    
-      #videoForm {
-        background-color: #fff;
-        padding: 20px;
-        border-radius: 8px;
-        box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-        width: 300px;
+
+      /* Center the text in the welcome container */
+      .welcome-container {
+        display: flex;
+        background-color: #f0c99d;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        min-height: 100vh;
+        font-family: "Times New Roman";
         text-align: center;
-        margin: 100px auto;
       }
-    
-      label {
-        display: block;
-        margin-bottom: 10px;
-        color: #333;
+
+      /* Center the content container horizontally and set max-width */
+      .content-container {
+        background: linear-gradient(
+          to bottom right,
+          #ff9999,
+          #66ccff
+        ); /* Gradient background */
+        padding: 40px;
+        border-radius: 10px;
+        box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);
+        width: 80%;
+        max-width: 800px;
       }
-    
-      input {
+
+      /* Vertically align the form elements with equal spacing */
+      .form-container,
+      #summaryVideoContainer {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 20px;
+      }
+
+      /* Remove the max-width and add some padding to the input box */
+      /* .custom-input {
+  padding: 10px;
+  width: 80%;
+} */
+      /* Add unique styling to the custom input */
+      .custom-input {
+        padding: 12px;
         width: 100%;
-        padding: 8px;
-        margin-bottom: 15px;
-        box-sizing: border-box;
-      }
-    
-      button {
-        background-color: #4CAF50;
-        color: #fff;
-        padding: 10px 15px;
-        border: none;
-        border-radius: 4px;
-        cursor: pointer;
+        max-width: 400px;
+        border: 2px solid #ccf0b7; /* Green border */
+        border-radius: 8px;
         font-size: 16px;
+        color: #333; /* Text color */
+        background-color: #f8f8f8; /* Light gray background */
+        transition: border-color 0.3s ease-in-out,
+          background-color 0.3s ease-in-out; /* Smooth transition */
       }
-    
-      button:hover {
-        background-color: #45a049;
+
+      /* Add hover effect */
+      .custom-input:hover {
+        border-color: #66ccff; /* Dark green border on hover */
       }
-      #summary{    
-        margin: 0 auto;
-        width: 40%;
+
+      /* Add focus effect */
+      .custom-input:focus {
+        border-color: #ff9999; /* Blue border on focus */
+        outline: none; /* Remove default focus outline */
+      }
+
+      /* Add focus effect for clicked state */
+      .custom-input:active {
+        border-color: #ff7f50; /* Coral border when input is clicked */
+      }
+
+      /* Set a specific width for the button and add some margin */
+      .button-container {
+        display: flex;
+        justify-content: center;
+        width: 100%;
+      }
+
+      /* Set the width of the buttons */
+      .custom-button {
+        padding: 10px 20px;
+        background-color: #8fdb63;
+        border: none;
+        color: white;
+        text-align: center;
+        text-decoration: none;
+        font-family: "Times New Roman";
+        font-size: 16px;
+        transition-duration: 0.4s;
+        cursor: pointer;
+        border-radius: 8px;
+        width: 50%;
+        max-width: 200px;
+        margin: 15px; /* Add margin around buttons */
+      }
+      /* Change the button background color on hover */
+      .custom-button:hover {
+        background-color: #00b318;
       }
     </style>
-</head>
-<body>
-    <div id="form">   
-        <form id="videoForm">
-            <label for="videoURL">Enter YouTube Video URL:</label>
-            <input type="text" id="videoURL" name="videoURL" required>
-            <button type="button" onclick="processVideo()">Generate Summary</button>
+  </head>
+  <body>
+
+
+    <div class="welcome-container">
+      <div class="content-container">
+        <h1>Welcome</h1>
+        <form id="videoForm" class="form-container">
+          <label for="videoURL">Enter YouTube Video URL:</label>
+          <input type="text" id="videoURL" class="custom-input" name="videoURL" required />
+          <div class="button-container">
+            <button
+              type="button"
+              class="custom-button"
+              onclick="processVideo()"
+            >
+              Generate Summary
+            </button>
+          </div>
         </form>
-    </div>
-    <div id="summary">
-        <div id="summaryVideoContainer" style="display:none;">
-            <video width="640" height="360" controls id="summaryVideo">
+      </div>
+      <div id="summary">
+        <div id="summaryVideoContainer" style="display: none">
+          <video width="640" height="360" controls id="summaryVideo">
             Your browser does not support the video tag.
-            </video>
+          </video>
         </div>
+      </div>
     </div>
 
     <script>
       async function processVideo() {
-        const videoURL = document.getElementById('videoURL').value;
+        const videoURL = document.getElementById("videoURL").value;
         const formData = new FormData();
-        formData.append('videoURL', videoURL);
-    
-        const response = await fetch('/', {
-          method: 'POST',
+        formData.append("videoURL", videoURL);
+
+        const response = await fetch("/", {
+          method: "POST",
           body: formData,
         });
-    
+
         const data = await response.json();
-    
+
         // Extract base64Video components
         const [base64Audio, imageFolder, outputVideoPath] = data.base64Video;
-  
+
         // Update the video source
-        const summaryVideo = document.getElementById('summaryVideo');
+        const summaryVideo = document.getElementById("summaryVideo");
         summaryVideo.src = `data:video/mp4;base64,${base64Audio}`;
-    
+
         // Show the video container
-        document.getElementById('summaryVideoContainer').style.display = 'block';
+        document.getElementById("summaryVideoContainer").style.display =
+          "block";
       }
-  </script>
-</body>
+    </script>
+  </body>
 </html>
