@@ -1,0 +1,98 @@
+<!-- templates/index.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>YouTube Summary App</title>
+  <style>
+    body {
+        font-family: Arial, sans-serif;
+        background-color: #f4f4f4;
+        margin: 0;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+      }
+    
+      #videoForm {
+        background-color: #fff;
+        padding: 20px;
+        border-radius: 8px;
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        width: 300px;
+        text-align: center;
+        margin: 100px auto;
+      }
+    
+      label {
+        display: block;
+        margin-bottom: 10px;
+        color: #333;
+      }
+    
+      input {
+        width: 100%;
+        padding: 8px;
+        margin-bottom: 15px;
+        box-sizing: border-box;
+      }
+    
+      button {
+        background-color: #4CAF50;
+        color: #fff;
+        padding: 10px 15px;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 16px;
+      }
+    
+      button:hover {
+        background-color: #45a049;
+      }
+      #summary{    
+        margin: 0 auto;
+        width: 40%;
+      }
+    </style>
+</head>
+<body>
+    <div id="form">   
+        <form id="videoForm">
+            <label for="videoURL">Enter YouTube Video URL:</label>
+            <input type="text" id="videoURL" name="videoURL" required>
+            <button type="button" onclick="processVideo()">Generate Summary</button>
+        </form>
+    </div>
+    <div id="summary">
+        <div id="summaryVideoContainer" style="display:none;">
+            <video width="640" height="360" controls id="summaryVideo">
+            Your browser does not support the video tag.
+            </video>
+        </div>
+    </div>
+
+  <script>
+    async function processVideo() {
+      const videoURL = document.getElementById('videoURL').value;
+      const formData = new FormData();
+      formData.append('videoURL', videoURL);
+  
+      const response = await fetch('/', {
+        method: 'POST',
+        body: formData,
+      });
+  
+      const data = await response.json();
+  
+      // Update the video source
+      const summaryVideo = document.getElementById('summaryVideo');
+      summaryVideo.src = `data:video/mp4;base64,${data.base64Video}`;
+  
+      // Show the video container
+      document.getElementById('summaryVideoContainer').style.display = 'block';
+    }
+  </script>
+</body>
+</html>
