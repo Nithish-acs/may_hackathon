@@ -73,27 +73,29 @@
         </div>
     </div>
 
-  <script>
-    async function processVideo() {
-      const videoURL = document.getElementById('videoURL').value;
-      const formData = new FormData();
-      formData.append('videoURL', videoURL);
+    <script>
+      async function processVideo() {
+        const videoURL = document.getElementById('videoURL').value;
+        const formData = new FormData();
+        formData.append('videoURL', videoURL);
+    
+        const response = await fetch('/', {
+          method: 'POST',
+          body: formData,
+        });
+    
+        const data = await response.json();
+    
+        // Extract base64Video components
+        const [base64Audio, imageFolder, outputVideoPath] = data.base64Video;
   
-      const response = await fetch('/', {
-        method: 'POST',
-        body: formData,
-      });
-  
-      const data = await response.json();
-  
-      // Update the video source
-      const summaryVideo = document.getElementById('summaryVideo');
-      console.log("video src"+data.base64Video)
-      summaryVideo.src = `data:video/mp4;base64,${data.base64Video}`;
-  
-      // Show the video container
-      document.getElementById('summaryVideoContainer').style.display = 'block';
-    }
+        // Update the video source
+        const summaryVideo = document.getElementById('summaryVideo');
+        summaryVideo.src = `data:video/mp4;base64,${base64Audio}`;
+    
+        // Show the video container
+        document.getElementById('summaryVideoContainer').style.display = 'block';
+      }
   </script>
 </body>
 </html>

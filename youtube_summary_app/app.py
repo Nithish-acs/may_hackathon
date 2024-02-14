@@ -1,5 +1,6 @@
 # app.py
 import os
+import traceback
 from flask import Flask, render_template, request, jsonify
 import openai
 from urllib.parse import parse_qs, urlparse
@@ -9,7 +10,13 @@ import base64
 import io
 from pydub import AudioSegment
 from pydub.playback import play
-from moviepy.editor import VideoFileClip, ImageSequenceClip
+from moviepy.editor import AudioFileClip, ImageClip, ImageSequenceClip
+from moviepy.video.fx import all as vfx
+from PIL import Image
+from moviepy.editor import vfx
+from PIL import Image
+from PIL import ImageFilter
+
 
 app = Flask(__name__)
 
@@ -35,7 +42,7 @@ def index():
         # Create summary video (you need to implement this)
         image_folder = os.path.join('static', 'images')  # Replace with your image folder
         
-        base64_video = (base64_audio, image_folder, output_path)
+        base64_video = create_summary_video(base64_audio, image_folder, output_path)
 
         return jsonify({'base64Video': base64_video, 'base64Audio': base64_audio})
 
@@ -95,14 +102,14 @@ def summarize_text(text):
         # Extract the generated summary from the API response
         summary = response.choices[0].text.strip()
         
-        summary = "The maximum team size is capped at 4 members while there is no minimum team size. As a participant, you should make sure to check how many prizes are available per team. There is usually a limited number of prizes for each challenge. So if you form a large team and win a challenge, there might not be enough prizes for everyone on your team."
+        summary = "The maximum team size is capped at 4 members while there is no minimum team size"
         return summary
 
     except Exception as e:
         # Handle API request errors
         print(f"Error summarizing text: {e}")
         # return None
-        summary = "The maximum team size is capped at 4 members while there is no minimum team size. As a participant, you should make sure to check how many prizes are available per team. There is usually a limited number of prizes for each challenge. So if you form a large team and win a challenge, there might not be enough prizes for everyone on your team."
+        summary = "The maximum team size is capped at 4 members while there is no minimum team size "
         return summary
 
 def text_to_speech(text):
@@ -127,11 +134,13 @@ def text_to_speech(text):
         print(f"Error converting text to speech: {e}")
         return None
 
+
+
 def create_summary_video(base64_audio, image_folder, output_path):
     try:
         # Decode base64 audio
         audio_data = base64.b64decode(base64_audio)
-        
+
         # Save the audio to a file
         audio_path = 'static/audio_summary.mp3'
         with open(audio_path, 'wb') as audio_file:
@@ -151,10 +160,14 @@ def create_summary_video(base64_audio, image_folder, output_path):
         # Create a list of image clips
         image_clips = [ImageClip(os.path.join(image_folder, image_file), duration=audio_clip.duration) for image_file in image_files]
 
-        print("Image clips created:", image_clips)
+        # Resize each image clip to match the audio clip's duration
+        # resized_image_clips = [clip.resize(width=int(audio_clip.fps * clip.duration), method=Image.ANTIALIAS) for clip in image_clips]
+        resized_image_clips = [clip.resize(width=int(audio_clip.fps * clip.duration), method=ImageFilter.ANTIALIAS) for clip in image_clips]
 
-        # Create a video clip by concatenating image clips
-        video_clip = ImageSequenceClip(image_clips, fps=24)  # You can adjust the fps as needed
+        print("Image clips created:", resized_image_clips)
+
+        # Create a video clip by concatenating resized image clips
+        video_clip = ImageSequenceClip(resized_image_clips, fps=audio_clip.fps)
 
         # Set the audio for the video clip
         video_clip = video_clip.set_audio(audio_clip)
@@ -167,14 +180,14 @@ def create_summary_video(base64_audio, image_folder, output_path):
         return output_path
 
     except Exception as e:
+        traceback.print_exc()
         # Handle errors during video creation
         print(f"Error creating video: {e}")
         return None
 
-    except Exception as e:
-        # Handle errors during video creation
-        print(f"Error creating video: {e}")
-        return None
+
+
+
 
 if __name__ == '__main__':
     app.run(debug=True)
