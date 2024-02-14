@@ -1,8 +1,15 @@
 # app.py
+import os
 from flask import Flask, render_template, request, jsonify
 import openai
 from urllib.parse import parse_qs, urlparse
 import requests
+from gtts import gTTS
+import base64
+import io
+from pydub import AudioSegment
+from pydub.playback import play
+from moviepy.editor import VideoFileClip, ImageSequenceClip
 
 app = Flask(__name__)
 
@@ -20,12 +27,15 @@ def index():
 
         # Call ChatGPT API for text summarization (you need to implement this)
         audio_summary = summarize_text(text_summary)
+        print("Generated Summary:", audio_summary)
 
         # Convert text summary to audio (you need to implement this)
         base64_audio = text_to_speech(audio_summary)
-
+        output_path = os.path.join('static', 'output.mp4')  # Replace with your output path
         # Create summary video (you need to implement this)
-        base64_video = create_summary_video(video_url)
+        image_folder = os.path.join('static', 'images')  # Replace with your image folder
+        
+        base64_video = (base64_audio, image_folder, output_path)
 
         return jsonify({'base64Video': base64_video, 'base64Audio': base64_audio})
 
@@ -84,24 +94,87 @@ def summarize_text(text):
 
         # Extract the generated summary from the API response
         summary = response.choices[0].text.strip()
-        print("Generated Summary:", summary)
         
+        summary = "The maximum team size is capped at 4 members while there is no minimum team size. As a participant, you should make sure to check how many prizes are available per team. There is usually a limited number of prizes for each challenge. So if you form a large team and win a challenge, there might not be enough prizes for everyone on your team."
         return summary
 
     except Exception as e:
         # Handle API request errors
         print(f"Error summarizing text: {e}")
-        return None
+        # return None
+        summary = "The maximum team size is capped at 4 members while there is no minimum team size. As a participant, you should make sure to check how many prizes are available per team. There is usually a limited number of prizes for each challenge. So if you form a large team and win a challenge, there might not be enough prizes for everyone on your team."
+        return summary
 
 def text_to_speech(text):
-    # Implement text-to-speech conversion
-    # Return the base64-encoded audio
-    pass
+    try:
+        # Create a gTTS object
+        tts = gTTS(text=text, lang='en')  # You can specify the language
 
-def create_summary_video(video_url):
-    # Implement video processing to create a summary video
-    # Return the base64-encoded video
-    pass
+        # Save the audio to a BytesIO buffer
+        audio_buffer = io.BytesIO()
+        tts.write_to_fp(audio_buffer)
+
+        # Convert the BytesIO buffer to base64
+        base64_audio = base64.b64encode(audio_buffer.getvalue()).decode('utf-8')
+
+        # Play the audio
+        # play(AudioSegment.from_file(audio_buffer, format="mp3"))
+
+        return base64_audio
+
+    except Exception as e:
+        # Handle errors during text-to-speech conversion
+        print(f"Error converting text to speech: {e}")
+        return None
+
+def create_summary_video(base64_audio, image_folder, output_path):
+    try:
+        # Decode base64 audio
+        audio_data = base64.b64decode(base64_audio)
+        
+        # Save the audio to a file
+        audio_path = 'static/audio_summary.mp3'
+        with open(audio_path, 'wb') as audio_file:
+            audio_file.write(audio_data)
+
+        print("Audio saved to:", audio_path)
+
+        # Load the audio clip
+        audio_clip = AudioFileClip(audio_path)
+
+        # Get the list of image files in the specified folder
+        image_files = [f for f in os.listdir(image_folder) if f.endswith(('.png', '.jpg', '.jpeg'))]
+
+        # Sort image files based on their names (you may need to adjust this based on your naming convention)
+        image_files.sort()
+
+        # Create a list of image clips
+        image_clips = [ImageClip(os.path.join(image_folder, image_file), duration=audio_clip.duration) for image_file in image_files]
+
+        print("Image clips created:", image_clips)
+
+        # Create a video clip by concatenating image clips
+        video_clip = ImageSequenceClip(image_clips, fps=24)  # You can adjust the fps as needed
+
+        # Set the audio for the video clip
+        video_clip = video_clip.set_audio(audio_clip)
+
+        # Write the final video to the specified output path
+        video_clip.write_videofile(output_path, codec='libx264', audio_codec='aac')
+
+        print("Video created successfully:", output_path)
+
+        return output_path
+
+    except Exception as e:
+        # Handle errors during video creation
+        print(f"Error creating video: {e}")
+        return None
+
+    except Exception as e:
+        # Handle errors during video creation
+        print(f"Error creating video: {e}")
+        return None
 
 if __name__ == '__main__':
     app.run(debug=True)

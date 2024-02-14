@@ -88,6 +88,7 @@
   
       // Update the video source
       const summaryVideo = document.getElementById('summaryVideo');
+      console.log("video src"+data.base64Video)
       summaryVideo.src = `data:video/mp4;base64,${data.base64Video}`;
   
       // Show the video container
