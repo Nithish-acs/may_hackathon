@@ -16,7 +16,10 @@ from PIL import Image
 from moviepy.editor import vfx
 from PIL import Image
 from PIL import ImageFilter
-
+from moviepy.editor import ImageClip, VideoFileClip
+from moviepy.editor import ImageSequenceClip, AudioFileClip
+import numpy as np
+import cv2
 
 app = Flask(__name__)
 
@@ -44,7 +47,9 @@ def index():
         
         base64_video = create_summary_video(base64_audio, image_folder, output_path)
 
-        return jsonify({'base64Video': base64_video, 'base64Audio': base64_audio})
+        # return jsonify({'base64Video': base64_video, 'base64Audio': base64_audio})
+        return jsonify({'base64Video': [base64_audio, image_folder, output_path], 'base64Audio': base64_audio})
+
 
     return render_template('index.html')
 
@@ -135,7 +140,6 @@ def text_to_speech(text):
         return None
 
 
-
 def create_summary_video(base64_audio, image_folder, output_path):
     try:
         # Decode base64 audio
@@ -149,7 +153,7 @@ def create_summary_video(base64_audio, image_folder, output_path):
         print("Audio saved to:", audio_path)
 
         # Load the audio clip
-        audio_clip = AudioFileClip(audio_path)
+        audio_clip = cv2.VideoCapture(audio_path)
 
         # Get the list of image files in the specified folder
         image_files = [f for f in os.listdir(image_folder) if f.endswith(('.png', '.jpg', '.jpeg'))]
@@ -157,23 +161,24 @@ def create_summary_video(base64_audio, image_folder, output_path):
         # Sort image files based on their names (you may need to adjust this based on your naming convention)
         image_files.sort()
 
-        # Create a list of image clips
-        image_clips = [ImageClip(os.path.join(image_folder, image_file), duration=audio_clip.duration) for image_file in image_files]
+        # Create a VideoWriter object
+        fourcc = cv2.VideoWriter_fourcc(*'mp4v')  # You may need to adjust the codec based on your system
 
-        # Resize each image clip to match the audio clip's duration
-        # resized_image_clips = [clip.resize(width=int(audio_clip.fps * clip.duration), method=Image.ANTIALIAS) for clip in image_clips]
-        resized_image_clips = [clip.resize(width=int(audio_clip.fps * clip.duration), method=ImageFilter.ANTIALIAS) for clip in image_clips]
+        # Get the dimensions of the first image in the folder
+        first_image_path = os.path.join(image_folder, image_files[0])
+        first_image = cv2.imread(first_image_path)
+        frame_height, frame_width, _ = first_image.shape
 
-        print("Image clips created:", resized_image_clips)
+        video_writer = cv2.VideoWriter(output_path, fourcc, audio_clip.get(cv2.CAP_PROP_FPS), (frame_width, frame_height))
 
-        # Create a video clip by concatenating resized image clips
-        video_clip = ImageSequenceClip(resized_image_clips, fps=audio_clip.fps)
+        # Iterate through image files and write frames to the video
+        for image_file in image_files:
+            image_path = os.path.join(image_folder, image_file)
+            frame = cv2.imread(image_path)
+            video_writer.write(frame)
 
-        # Set the audio for the video clip
-        video_clip = video_clip.set_audio(audio_clip)
-
-        # Write the final video to the specified output path
-        video_clip.write_videofile(output_path, codec='libx264', audio_codec='aac')
+        # Release the video writer
+        video_writer.release()
 
         print("Video created successfully:", output_path)
 
@@ -184,8 +189,6 @@ def create_summary_video(base64_audio, image_folder, output_path):
         # Handle errors during video creation
         print(f"Error creating video: {e}")
         return None
-
-
 
 
 
